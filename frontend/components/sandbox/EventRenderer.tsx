@@ -9,12 +9,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { TreeView, type TreeDataItem } from "@/components/ui/tree-view";
 import {
   Bot,
   User,
   Terminal,
   FileText,
   FileCode,
+  Folder,
   FolderOpen,
   Search,
   Globe,
@@ -632,55 +634,20 @@ function GlobCard({
   // Build file tree for display
   const fileTree = buildFileTree(filenames);
 
-  // Render tree recursively
-  const renderTree = (
-    node: FileTreeNode,
-    depth: number = 0,
-    isLast: boolean = true,
-    prefix: string = "",
-  ): React.ReactNode[] => {
-    const result: React.ReactNode[] = [];
-    const children = Array.from(node.children.values()).sort((a, b) => {
-      // Directories first, then files
-      if (a.isFile !== b.isFile) return a.isFile ? 1 : -1;
-      return a.name.localeCompare(b.name);
-    });
-
-    children.forEach((child, index) => {
-      const isLastChild = index === children.length - 1;
-      const connector = isLastChild ? "└── " : "├── ";
-      const childPrefix = prefix + (isLastChild ? "    " : "│   ");
-
-      result.push(
-        <div
-          key={child.path}
-          className={cn(
-            "flex items-center gap-1 hover:bg-muted/50 rounded px-1 -mx-1",
-            child.isFile ? "text-foreground" : "text-cyan-500 font-medium",
-          )}
-        >
-          <span className="text-muted-foreground font-mono select-none whitespace-pre">
-            {prefix}
-            {connector}
-          </span>
-          {child.isFile ? (
-            <File className="h-3 w-3 shrink-0 text-muted-foreground" />
-          ) : (
-            <FolderOpen className="h-3 w-3 shrink-0" />
-          )}
-          <span className="truncate">
-            {child.name}
-            {!child.isFile && "/"}
-          </span>
-        </div>,
-      );
-
-      if (!child.isFile && child.children.size > 0) {
-        result.push(...renderTree(child, depth + 1, isLastChild, childPrefix));
-      }
-    });
-
-    return result;
+  // Convert FileTreeNode to TreeDataItem[] for TreeView component
+  const fileTreeToTreeData = (node: FileTreeNode): TreeDataItem[] => {
+    return Array.from(node.children.values())
+      .sort((a, b) => {
+        if (a.isFile !== b.isFile) return a.isFile ? 1 : -1;
+        return a.name.localeCompare(b.name);
+      })
+      .map((child) => ({
+        id: child.path,
+        name: child.isFile ? child.name : `${child.name}/`,
+        icon: child.isFile ? File : Folder,
+        openIcon: child.isFile ? undefined : FolderOpen,
+        children: child.isFile ? undefined : fileTreeToTreeData(child),
+      }));
   };
 
   // For empty results or running state
@@ -757,9 +724,13 @@ function GlobCard({
                     )}
                   </Button>
                 </div>
-                <div className="text-xs font-mono max-h-64 overflow-y-auto space-y-0.5">
-                  {renderTree(fileTree)}
-                </div>
+                <TreeView
+                  data={fileTreeToTreeData(fileTree)}
+                  expandAll
+                  defaultNodeIcon={Folder}
+                  defaultLeafIcon={File}
+                  className="text-xs max-h-64 overflow-y-auto"
+                />
                 {truncated && (
                   <div className="mt-2 text-xs text-amber-500 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
@@ -1849,7 +1820,7 @@ function ReadCard({
   timestamp,
   status = "completed",
 }: ReadCardProps) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [showFullContent, setShowFullContent] = useState(false);
   const [copied, setCopied] = useState(false);
 
