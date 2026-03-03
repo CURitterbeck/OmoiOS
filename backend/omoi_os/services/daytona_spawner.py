@@ -3011,7 +3011,7 @@ Use subagents and skills when they can help accomplish the task more effectively
                                     # Full thinking content
                                     await report_event("agent.thinking", {
                                         "turn": turn_count,
-                                        "content": block.text,  # Full content, no truncation
+                                        "content": block.thinking,  # Full content, no truncation
                                         "thinking_type": "extended_thinking",
                                     })
 

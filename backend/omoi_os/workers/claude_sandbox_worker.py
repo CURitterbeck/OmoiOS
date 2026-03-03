@@ -3285,13 +3285,13 @@ python spec_cli.py api-trace
                                     "agent.thinking",
                                     {
                                         "turn": self.turn_count,
-                                        "content": block.text,  # Full content
+                                        "content": block.thinking,  # Full content
                                         "thinking_type": "extended_thinking",
                                     },
                                 )
                             logger.debug(
                                 "Agent thinking",
-                                extra={"content_preview": block.text[:100]},
+                                extra={"content_preview": block.thinking[:100]},
                             )
 
                         elif isinstance(block, ToolUseBlock):
